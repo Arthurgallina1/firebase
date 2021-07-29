@@ -10,13 +10,16 @@ function App() {
 
   const [name, setName] = useState<string>('')
   const [lastName, setLastName] = useState<string>('')
-  const [agents, setAgents] = useState<AgentType[]>()
+  const [agents, setAgents] = useState<AgentType[]>([])
 
   useEffect(() => {
+    //real time listener
     firebaseDB.child('agents').on('value', (snapshot) => {
       if (snapshot.val()) {
-        console.log(snapshot.val())
+        // console.log(snapshot.val())
         setAgents({ ...snapshot.val() })
+      } else {
+        setAgents([])
       }
     })
   }, [])
@@ -36,6 +39,26 @@ function App() {
     setLastName('')
   }
 
+  const handleDelete = (agentId: string) => {
+    firebaseDB.child(`agents/${agentId}`).remove((err) => {
+      if (err) console.debug('error', err)
+    })
+  }
+
+  const getDBStuff = async () => {
+    const SS = await firebaseDB
+      .child('agents')
+      .orderByValue()
+      .on('value', (snapshot) => {
+        snapshot.forEach((data) => {
+          console.log(
+            'key:' + data.key + 'value: ' + JSON.stringify(data.val())
+          )
+        })
+      })
+    // console.log(SS)
+  }
+
   return (
     <div
       style={{
@@ -48,6 +71,9 @@ function App() {
     >
       <h1>React Firebase</h1>
       <h3>Real time data-base</h3>
+      <div>
+        <button onClick={getDBStuff}>Get DB Stuff</button>
+      </div>
       <div>
         <form
           style={{
@@ -98,6 +124,18 @@ function App() {
             Adicionar
           </button>
         </form>
+        <div>
+          <h4>Agents list</h4>
+          {Object.keys(agents).map((agentId: any) => {
+            return (
+              <div key={agents[agentId].lastName}>
+                <span>{agents[agentId].name}</span>{' '}
+                <span>{agents[agentId].lastName}</span>{' '}
+                <button onClick={() => handleDelete(agentId)}>Delete</button>
+              </div>
+            )
+          })}
+        </div>
       </div>
     </div>
   )
